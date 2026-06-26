@@ -1,0 +1,48 @@
+# Ejemplo de overrides por cliente. Renómbralo a porkcolombia.tfvars.
+# Solo defines lo que se aparta del default del módulo; lo demás queda igual.
+# prefix / client_name / account_id NO van aquí: vienen del Variable Group (TF_VAR_*).
+
+scope = "REGIONAL"
+
+managed_rule_groups = {
+  AWSManagedRulesCommonRuleSet          = true
+  AWSManagedRulesKnownBadInputsRuleSet  = true
+  AWSManagedRulesAmazonIpReputationList = true
+  AWSManagedRulesAnonymousIpList        = true
+  AWSManagedRulesSQLiRuleSet            = true
+  AWSManagedRulesBotControlRuleSet      = false
+}
+
+rate_limit_rules = {
+  global = { limit = 5000 }
+}
+
+geo_block_countries = []
+ip_block_list       = ["198.51.100.0/24"]
+
+# Reglas custom (un statement). priority = orden relativo entre ellas.
+custom_rules = {
+  # Bloquea si el header User-Agent contiene "BadScraper"
+  block-bad-ua = {
+    priority      = 1
+    action        = "block"
+    type          = "byte_match"
+    field         = "header"
+    header_name   = "user-agent"
+    search_string = "BadScraper"
+  }
+  # Bloquea cuerpos de request mayores a 1 MB
+  block-big-body = {
+    priority            = 2
+    action              = "block"
+    type                = "size_constraint"
+    field               = "body"
+    comparison_operator = "GT"
+    size                = 1048576
+  }
+}
+
+# Lógica compleja → tu propio aws_wafv2_rule_group (definido en el repo del cliente):
+# custom_rule_group_arns = {
+#   waf-reglas-app = { arn = aws_wafv2_rule_group.app.arn, priority = 1 }
+# }
